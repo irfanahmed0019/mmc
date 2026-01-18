@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MakeMyCut | Signing you in...</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .playfair {
+            font-family: 'Playfair Display', serif;
+        }
+
+        @keyframes apple-fade {
+            0% { opacity: 1; }
+            100% { opacity: 0.15; }
+        }
+
+        .animate-apple-fade {
+            animation: apple-fade 1.2s linear infinite;
+        }
+
+        .loader-bar {
+            position: absolute;
+            left: 45%;
+            top: 0;
+            width: 10%;
+            height: 30%;
+            background-color: white;
+            border-radius: 999px;
+            transform-origin: 50% 160%;
+        }
+
+        /* Hide elements initially to avoid flicker before JS kicks in */
+        [v-cloak] { display: none; }
+    </style>
+</head>
+<body class="min-h-screen w-full flex items-center justify-center relative">
+
+    <div id="app" class="flex flex-col items-center text-center space-y-10 z-10">
+        <!-- Logo -->
+        <h1 class="text-5xl md:text-6xl tracking-tight playfair text-white">
+            MakeMyCut
+        </h1>
+
+        <!-- Loading State -->
+        <div id="loading-container" class="flex flex-col items-center space-y-4">
+            <div class="relative w-5 h-5" id="apple-loader">
+                <!-- Bars injected by JS -->
+            </div>
+            <div>
+                <h2 class="text-lg font-medium">Signing you in…</h2>
+                <p class="text-sm text-zinc-500">
+                    Please wait while we verify your account
+                </p>
+            </div>
+        </div>
+
+        <!-- Error State (Hidden by default) -->
+        <div id="error-container" class="hidden flex items-center gap-2 border border-zinc-800 px-4 py-2 rounded-full text-sm text-zinc-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span id="error-text">Verification failed.</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="absolute bottom-8 text-xs text-zinc-700 tracking-wide uppercase font-medium">
+        Secure Session
+    </div>
+
+    <script>
+        // 1. Initialize Loader Bars
+        const loader = document.getElementById('apple-loader');
+        for (let i = 0; i < 12; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'loader-bar animate-apple-fade';
+            bar.style.transform = `rotate(${i * 30}deg)`;
+            bar.style.animationDelay = `${-1.1 + (i * 0.1)}s`;
+            loader.appendChild(bar);
+        }
+
+        // 2. Mock Logic (Equivalent to the React logic in Canvas)
+        const DEMO_MODE = true;
+
+        async function mockGetSession() {
+            await new Promise(r => setTimeout(r, 2500));
+            return { data: { session: { user: { id: "user_123" } } }, error: null };
+        }
+
+        async function mockGetProfile(userId) {
+            await new Promise(r => setTimeout(r, 800));
+            return { data: { role: "customer" }, error: null };
+        }
+
+        function showError(message) {
+            document.getElementById('loading-container').classList.add('hidden');
+            document.getElementById('error-container').classList.remove('hidden');
+            document.getElementById('error-text').innerText = message;
+        }
+
+        async function handleAuth() {
+            try {
+                // In production, replace these with real Supabase calls
+                const { data, error: sessionError } = await mockGetSession();
+
+                if (sessionError || !data.session) {
+                    console.log("Redirecting to /auth");
+                    return;
+                }
+
+                const { data: profile, error: profileError } = await mockGetProfile(data.session.user.id);
+
+                if (profileError || !profile) {
+                    showError("Verification failed.");
+                    return;
+                }
+
+                if (profile.role === "customer") {
+                    console.log("Redirecting to /home");
+                    // window.location.href = '/home';
+                } else if (profile.role === "salon_owner") {
+                    console.log("Redirecting to /salon/dashboard");
+                    // window.location.href = '/salon/dashboard';
+                } else {
+                    showError("Account setup incomplete.");
+                }
+            } catch (e) {
+                showError("An error occurred during sign in.");
+            }
+        }
+
+        // Start the process
+        window.onload = handleAuth;
+    </script>
+</body>
+</html>
